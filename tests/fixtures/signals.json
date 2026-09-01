@@ -1,0 +1,74 @@
+[
+  {
+    "sourceKind": "hacker_news",
+    "sourceInstanceId": "hn-main",
+    "externalId": "1001",
+    "canonicalUrl": "https://news.ycombinator.com/item?id=1001&utm_source=test",
+    "title": "Persistent authenticated browser sessions",
+    "excerpt": "How do you keep a browser session authenticated when a worker restarts?",
+    "publishedAt": "2026-08-31T12:00:00Z",
+    "collectedAt": "2026-09-01T00:00:00Z",
+    "engagement": {"score": 12, "comments": 8},
+    "provenance": {"transport": "api", "adapterVersion": "fixture", "requestUrl": "https://hn.algolia.com/api/v1/search_by_date", "retrievedAt": "2026-09-01T00:00:00Z"}
+  },
+  {
+    "sourceKind": "github_issues",
+    "sourceInstanceId": "gh-repo",
+    "externalId": "issue-1",
+    "url": "https://github.com/example/project/issues/1?utm_campaign=x",
+    "title": "Persistent authenticated browser sessions",
+    "excerpt": "Our browser worker loses persistent authenticated browser sessions after a restart.",
+    "publishedAt": "2026-08-30T10:00:00Z",
+    "collectedAt": "2026-09-01T00:00:00Z",
+    "engagement": {"comments": 5, "normalized": 0.2},
+    "provenance": {"transport": "api", "adapterVersion": "fixture", "requestUrl": "https://api.github.com/repos/example/project/issues"}
+  },
+  {
+    "sourceKind": "stack_exchange",
+    "sourceInstanceId": "stackoverflow",
+    "externalId": "question-2",
+    "url": "https://stackoverflow.com/questions/2/browser-authentication-state",
+    "title": "Persistent authenticated browser sessions",
+    "excerpt": "What is the safest way to keep persistent authenticated browser sessions across jobs?",
+    "publishedAt": "2026-08-29T08:00:00Z",
+    "collectedAt": "2026-09-01T00:00:00Z",
+    "engagement": {"score": 4, "views": 100},
+    "provenance": {"transport": "api", "adapterVersion": "fixture", "requestUrl": "https://api.stackexchange.com/2.3/questions"}
+  },
+  {
+    "sourceKind": "rss_atom",
+    "sourceInstanceId": "community-feed",
+    "externalId": "feed-3",
+    "url": "https://community.example/posts/browser-sessions",
+    "title": "Persistent authenticated browser sessions",
+    "excerpt": "Persistent authenticated browser sessions would prevent repeated authentication in our automation workflows.",
+    "publishedAt": "2026-08-28T08:00:00Z",
+    "collectedAt": "2026-09-01T00:00:00Z",
+    "engagement": {},
+    "provenance": {"transport": "rss", "adapterVersion": "fixture", "requestUrl": "https://community.example/feed.xml"}
+  },
+  {
+    "sourceKind": "hacker_news",
+    "sourceInstanceId": "hn-main",
+    "externalId": "1001",
+    "url": "https://news.ycombinator.com/item?id=1001#comment",
+    "title": "Persistent authenticated browser sessions",
+    "excerpt": "How do you keep a browser session authenticated when a worker restarts?",
+    "publishedAt": "2026-08-31T12:00:00Z",
+    "collectedAt": "2026-09-01T00:00:00Z",
+    "engagement": {"score": 12},
+    "provenance": {"transport": "api", "adapterVersion": "fixture", "requestUrl": "https://hn.algolia.com/api/v1/search_by_date"}
+  },
+  {
+    "sourceKind": "github_issues",
+    "sourceInstanceId": "gh-repo",
+    "externalId": "issue-4",
+    "url": "https://github.com/example/project/issues/4",
+    "title": "Dark mode preference for dashboard",
+    "excerpt": "Please add a dark mode theme to the dashboard.",
+    "publishedAt": "2026-08-31T08:00:00Z",
+    "collectedAt": "2026-09-01T00:00:00Z",
+    "engagement": {"comments": 1},
+    "provenance": {"transport": "api", "adapterVersion": "fixture", "requestUrl": "https://api.github.com/repos/example/project/issues"}
+  }
+]

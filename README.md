@@ -1,91 +1,103 @@
-# Solari Cookbook
+# Demand Radar
 
-Short, runnable examples for [Solari](https://getsolari.com) — cloud browsers,
-sandboxes, and desktops behind one API key.
+Demand Radar turns scattered public product requests into an evidence-backed view of what users need, what the product already covers, what is planned privately, and which opportunities remain unmapped.
 
-Every example in this repo is a complete program you can run in under a minute.
-They are deliberately small: one idea each, no framework, no scaffolding to read
-past. Copy one into your project and change the parts you care about.
+**Live product:** [demandradar.pivnev.design](https://demandradar.pivnev.design)<br>
+**Author:** [Anton Pivnev](https://pivnev.design) · [@Weeki513](https://github.com/Weeki513)
 
-## Examples
+This repository is a public fork of [`solari-sdk/solari-cookbook`](https://github.com/solari-sdk/solari-cookbook). The original runnable Solari examples remain under [`examples/`](examples/); the production application lives alongside them.
 
-### Cloud browser
+## The job to be done
 
-| Example | Language | What it shows |
-| --- | --- | --- |
-| [browser-quickstart-ts](examples/browser-quickstart-ts) | TypeScript | Launch a browser, open a page, read it |
-| [browser-quickstart-py](examples/browser-quickstart-py) | Python | Launch a browser, open a page, read it |
-| [browser-stealth-proxy-ts](examples/browser-stealth-proxy-ts) | TypeScript | Stealth mode + residential proxy egress |
-| [browser-profiles-ts](examples/browser-profiles-ts) | TypeScript | Log in once, reuse the session forever |
-| [browser-session-recording-py](examples/browser-session-recording-py) | Python | Record a session, download the replay |
+Product teams read the same demand repeatedly across issues, forums, launch comments, feeds, and support-adjacent communities. The hard part is not collecting more text. It is connecting the evidence to product context without exposing private roadmap information.
 
-### Sandbox
+Demand Radar classifies each cluster with explicit precedence:
 
-| Example | Language | What it shows |
-| --- | --- | --- |
-| [sandbox-quickstart-ts](examples/sandbox-quickstart-ts) | TypeScript | Run a command, write and read files |
-| [sandbox-code-interpreter-py](examples/sandbox-code-interpreter-py) | Python | Stateful Python kernel for agent loops |
-| [sandbox-port-preview-ts](examples/sandbox-port-preview-ts) | TypeScript | Expose a server in the VM on a public URL |
+1. **Existing** — matches a public capability.
+2. **Roadmap** — otherwise matches the private roadmap.
+3. **Unmapped Opportunity** — matches neither.
 
-### Desktop
+Every conclusion remains inspectable down to its original evidence, source, timestamp, and retrieval provenance.
 
-| Example | Language | What it shows |
-| --- | --- | --- |
-| [desktop-computer-use-py](examples/desktop-computer-use-py) | Python | Screenshot, click, and type on a Linux GUI |
+## Product
 
-## Running an example
+- A writable shared demo with 30 days of realistic history.
+- Configurable recurring scans and a manual **Run now** path using the same queue.
+- Evidence collection from developer communities, issue trackers, feeds, forums, and configurable source instances.
+- Deterministic normalization, deduplication, clustering, trends, and scoring.
+- A Pulse view that answers “what changed since I last reviewed this?”
+- Product Context editing with accept/reject AI previews.
+- Editable social drafts with autosave and reversible AI rewrites.
+- Strict server-side treatment of private roadmap text and generated-copy redaction.
 
-Each directory is self-contained.
+## Architecture
 
-```bash
-git clone https://github.com/solari-sdk/solari-cookbook.git
-cd solari-cookbook/examples/browser-quickstart-ts
-
-npm install                          # or: pip install -r requirements.txt
-export SOLARI_API_KEY=slr_live_...   # grab one at console.getsolari.com
-npm start                            # or: python main.py
+```text
+Public sources ── adapters / Solari Browser
+                         │
+                         ▼
+                Supabase scan queue
+                         │
+          Vercel worker leases one stage
+                         │
+                         ▼
+              Solari Sandbox processor
+       normalize → dedupe → cluster → score
+                         │
+                         ▼
+              Postgres + row-level security
+                         │
+             Next.js product interface
+                         │
+                         ▼
+              OpenAI structured outputs
 ```
 
-One `slr_live_` key works across browsers, sandboxes, and desktops, and every
-product bills to the same balance.
+The application is a Next.js and TypeScript monolith deployed on Vercel. Supabase provides email/password authentication, Postgres, row-level security, and the recurring scheduler. OpenAI Responses API calls use `gpt-5.6-luna` server-side for bounded structured tasks.
 
-## Which product do I want?
+### Why Solari is a real system boundary
 
-- **Cloud browser** — you need a *web page*: scraping, testing, filling forms,
-  anything Playwright or Puppeteer would do locally. Adds stealth, managed
-  proxies, captcha solving, profiles, and session recording.
-- **Sandbox** — you need to *run code*: an LLM's Python, an untrusted build, a
-  data job. A headless microVM that boots from a snapshot in about a second.
-- **Desktop** — you need a *screen*: computer-use agents, GUI apps, anything
-  that has to be clicked. A sandbox plus X11 and a live VNC stream.
+Solari Browser handles sources whose useful public content is assembled dynamically and also powers product-URL analysis. Sessions and clients are closed in `finally`; sensitive cookies and signed connection URLs are never persisted.
 
-## Gotchas the examples encode
+Solari Sandbox runs the pinned, pure-Python intelligence processor against bounded JSON. It keeps clustering reproducible and isolated from the web application runtime. Every sandbox is terminated with `kill()` and created with an idempotency key.
 
-Things that cost you an afternoon if you meet them cold:
+## Source strategy
 
-- **TypeScript: call `await solari.close()`.** The browser client keeps a
-  loopback proxy open for connection retries. Skip the close and your script
-  prints its output and then hangs forever instead of exiting.
-- **Recording is per session, not per account.** Pass `recording: true` when you
-  create the session; without it the replay endpoint 404s forever. The upload is
-  async after release, so poll for ~30s before giving up.
-- **Sandbox commands are not shell-interpreted.** `run("ls -la")` looks for a
-  binary named `ls -la`. Put argv in `args`, or run `sh -c` explicitly.
-- **`kill()`, not `close()`, ends a VM.** `close()` drops your local control
-  channel; the VM keeps running until its idle timeout.
-- **`timeoutMs` is a rolling idle window**, not a hard deadline — it resets on
-  every use.
+Stable API adapters cover Hacker News Algolia, GitHub Issues, Stack Exchange, DEV/Forem, Lobsters, RSS/Atom, and public GitLab. Configurable adapters support GitHub Discussions, Discourse, Canny, and Product Hunt instances. A failed source is recorded independently and does not invalidate successful evidence from the rest of the scan.
 
-## Links
+Authenticated scraping of X, LinkedIn, and Reddit is intentionally not required for v1.
 
-- Docs — [docs.getsolari.com](https://docs.getsolari.com)
-- Console — [console.getsolari.com](https://console.getsolari.com)
-- Changelog — [changelog.getsolari.com](https://changelog.getsolari.com)
-- Questions — [hello@getsolari.com](mailto:hello@getsolari.com)
+## Retention and business model
 
-## Contributing
+The retention loop is operational: recurring scans create new evidence, Pulse compresses the changes, users turn high-confidence opportunities into product actions and posts, and their review checkpoint makes the next visit meaningfully different.
 
-New examples are welcome. Keep them small, make them run end-to-end against the
-real API, and put anything surprising in a comment right where it bites.
+MAU and pricing claims are scenario assumptions rather than observed results. A plausible paid model is workspace-based pricing with scan volume, history, source breadth, and additional collaborators as expansion dimensions.
 
-MIT licensed.
+## Local setup
+
+Requirements: Node.js 22+, npm 10+, a Supabase project, Solari, and OpenAI API credentials.
+
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
+```
+
+Environment names are documented in [`.env.example`](.env.example). Keep all secret keys server-only; never expose the Supabase secret key, Solari key, OpenAI key, demo password, or worker secret through a `NEXT_PUBLIC_` variable.
+
+Database migrations and demo seed data live in [`supabase/`](supabase/). The preserved standalone Solari cookbook programs remain available in [`examples/`](examples/).
+
+## Verification
+
+```bash
+npm run typecheck
+npm run lint
+npm test
+npm run build
+```
+
+The release gate also includes Supabase RLS and integration checks, Playwright product-flow tests, one paid Solari Browser smoke, one paid Solari Sandbox smoke, and a fresh HTTPS request to the canonical domain.
+
+## License
+
+MIT. See [`LICENSE`](LICENSE).
