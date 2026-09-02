@@ -10,11 +10,12 @@ test.describe("Demand Radar production smoke", () => {
     await expect(page.getByRole("heading", { name: "Pulse", exact: true })).toBeVisible()
     await expect(page.getByRole("navigation", { name: "Workspace navigation" })).toBeVisible()
 
-    const sidebarBox = await page.locator("aside").boundingBox()
+    const sidebarBox = await page.locator("aside").first().boundingBox()
     const headerBox = await page.locator("header").boundingBox()
     expect(sidebarBox?.x).toBe(0)
     expect(headerBox?.x).toBe(sidebarBox?.width)
 
+    await page.waitForLoadState("networkidle")
     await page.getByRole("button", { name: "RU", exact: true }).click()
     await expect(page.getByRole("button", { name: "RU", exact: true })).toHaveAttribute("aria-pressed", "true")
     await expect(page.getByRole("navigation", { name: "Навигация рабочего пространства" })).toBeVisible()
