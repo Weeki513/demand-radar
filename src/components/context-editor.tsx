@@ -39,7 +39,7 @@ export type ContextItem = {
 }
 
 type ProductPreview = {
-  positioning: string
+  positioning: string[]
   icp: string[]
   problems: string[]
   capabilities: string[]
@@ -71,7 +71,7 @@ async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit): Pro
 
 function entriesFromPreview(preview: ProductPreview): PreviewEntry[] {
   const entries: PreviewEntry[] = []
-  if (preview.positioning.trim()) entries.push({ id: "positioning-0", label: "Positioning", kind: "positioning", text: preview.positioning.trim() })
+  for (const [index, text] of preview.positioning.entries()) if (text.trim()) entries.push({ id: `positioning-${index}`, label: "Positioning", kind: "positioning", text: text.trim() })
   for (const [index, text] of preview.icp.entries()) if (text.trim()) entries.push({ id: `icp-${index}`, label: "Ideal customer profile", kind: "icp", text: text.trim() })
   for (const [index, text] of preview.problems.entries()) if (text.trim()) entries.push({ id: `problem-${index}`, label: "Problem", kind: "problem", text: text.trim() })
   for (const [index, text] of preview.capabilities.entries()) if (text.trim()) entries.push({ id: `capability-${index}`, label: "Capability", kind: "capability", text: text.trim() })
