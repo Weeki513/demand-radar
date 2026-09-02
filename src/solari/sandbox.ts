@@ -18,6 +18,31 @@ const processorOutputSchema = z.object({
   clusters: z.array(z.record(z.string(), z.unknown())).max(500),
 })
 
+async function uploadSandboxFile(sandbox: {
+  uploadUrl(path: string): Promise<{ url: string }>
+}, filePath: string, contents: string) {
+  const signed = await sandbox.uploadUrl(filePath)
+  const response = await fetch(signed.url, {
+    method: "PUT",
+    headers: { "content-type": "application/octet-stream" },
+    body: contents,
+  })
+  if (!response.ok) {
+    throw new Error(`Sandbox file upload failed with status ${response.status}`)
+  }
+}
+
+async function downloadSandboxFile(sandbox: {
+  downloadUrl(path: string): Promise<{ url: string }>
+}, filePath: string) {
+  const signed = await sandbox.downloadUrl(filePath)
+  const response = await fetch(signed.url)
+  if (!response.ok) {
+    throw new Error(`Sandbox file download failed with status ${response.status}`)
+  }
+  return response.text()
+}
+
 export type ProcessorOutput = z.infer<typeof processorOutputSchema>
 
 export async function processEvidenceInSolariSandbox(input: {
@@ -39,7 +64,7 @@ export async function processEvidenceInSolariSandbox(input: {
   const client = new SolariClient({ apiKey: getServerEnv().SOLARI_API_KEY })
   const sandbox = await client.sandboxes.create({
     template: "base",
-    timeoutMs: 2 * 60_000,
+    timeoutMs: 10 * 60_000,
     metadata: {
       workload: "demand-radar-processor",
       scanRunId: input.scanRunId,
@@ -48,10 +73,13 @@ export async function processEvidenceInSolariSandbox(input: {
   })
 
   try {
-    await sandbox.connect()
+    // Use signed HTTP file transfers and the one-shot HTTP exec path. The
+    // control WebSocket is intended for interactive sessions; keeping the
+    // processor on it made a normal production run fail when that channel
+    // closed while the command was still valid in the guest.
     await Promise.all([
-      sandbox.files.write("/tmp/pipeline.py", processorSource),
-      sandbox.files.write("/tmp/input.json", payload),
+      uploadSandboxFile(sandbox, "/tmp/pipeline.py", processorSource),
+      uploadSandboxFile(sandbox, "/tmp/input.json", payload),
     ])
     const command = await sandbox.commands.run("python3", {
       args: [
@@ -70,11 +98,13 @@ export async function processEvidenceInSolariSandbox(input: {
       timeoutMs: 90_000,
     })
     if (command.exitCode !== 0) {
-      throw new Error(`Sandbox processor failed with exit code ${command.exitCode}`)
+      throw new Error(
+        `Sandbox processor failed with exit code ${command.exitCode}: ${command.stderr.slice(0, 500)}`,
+      )
     }
 
     return processorOutputSchema.parse(
-      JSON.parse(await sandbox.files.readText("/tmp/output.json")),
+      JSON.parse(await downloadSandboxFile(sandbox, "/tmp/output.json")),
     )
   } finally {
     await sandbox.kill().catch(() => undefined)
