@@ -73,18 +73,25 @@ export async function processEvidenceInSolariSandbox(input: {
   })
 
   try {
-    // Use signed HTTP file transfers and the one-shot HTTP exec path. The
-    // control WebSocket is intended for interactive sessions; keeping the
-    // processor on it made a normal production run fail when that channel
-    // closed while the command was still valid in the guest.
+    // Use signed HTTP file transfers so large payloads do not occupy the
+    // control channel. Keep the command on the control channel, but emit a
+    // heartbeat while it runs: the processor can legitimately be quiet for
+    // longer than the gateway's idle window on a cold sandbox.
     await Promise.all([
       uploadSandboxFile(sandbox, "/tmp/pipeline.py", processorSource),
       uploadSandboxFile(sandbox, "/tmp/input.json", payload),
     ])
+    await sandbox.connect()
     const command = await sandbox.commands.run("python3", {
       args: [
         "-c",
         [
+          "import threading, time",
+          "def _heartbeat():",
+          "  while True:",
+          "    print('processor heartbeat', flush=True)",
+          "    time.sleep(10)",
+          "threading.Thread(target=_heartbeat, daemon=True).start()",
           "import json, sys",
           "from datetime import datetime",
           "sys.path.insert(0, '/tmp')",
