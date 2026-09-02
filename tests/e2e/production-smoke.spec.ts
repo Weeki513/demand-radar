@@ -10,6 +10,11 @@ test.describe("Demand Radar production smoke", () => {
     await expect(page.getByRole("heading", { name: "Pulse", exact: true })).toBeVisible()
     await expect(page.getByRole("navigation", { name: "Workspace navigation" })).toBeVisible()
 
+    const sidebarBox = await page.locator("aside").boundingBox()
+    const headerBox = await page.locator("header").boundingBox()
+    expect(sidebarBox?.x).toBe(0)
+    expect(headerBox?.x).toBe(sidebarBox?.width)
+
     await page.getByRole("link", { name: "Demand signals", exact: true }).click()
     await expect(page).toHaveURL(/\/signals$/)
     await expect(page.getByRole("heading", { name: "Demand signals", exact: true })).toBeVisible()

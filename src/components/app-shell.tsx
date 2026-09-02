@@ -103,7 +103,7 @@ function AppSidebar({ product, products }: { product: DemoProduct; products: Dem
   const navItems = getNavItems(product.id)
 
   return (
-    <aside className="flex w-full shrink-0 flex-col border-b bg-sidebar lg:fixed lg:inset-y-0 lg:w-64 lg:border-r lg:border-b-0">
+    <aside className="flex w-full shrink-0 flex-col border-b bg-sidebar lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:border-r lg:border-b-0">
       <div className="flex items-center justify-between px-5 py-5 lg:block">
         <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold tracking-[-0.02em]">
           <span className="flex size-6 items-center justify-center rounded-sm bg-foreground text-background">
