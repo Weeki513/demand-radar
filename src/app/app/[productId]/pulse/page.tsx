@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/page-header"
 import { PulseDashboard, type PulseAction, type PulsePost, type PulseScan, type PulseStats } from "@/components/pulse-dashboard"
 import type { DemandCluster, Evidence, OpportunityStatus, Trend } from "@/lib/demo-data"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
+import { cookies } from "next/headers"
 
 type Row = Record<string, unknown>
 
@@ -10,11 +11,11 @@ function textOf(value: unknown) {
   return value && typeof value === "object" ? String((value as Row).text ?? "") || null : null
 }
 
-function formatDate(value: unknown, options?: Intl.DateTimeFormatOptions) {
+function formatDate(value: unknown, locale: "en" | "ru", options?: Intl.DateTimeFormatOptions) {
   const date = new Date(String(value ?? ""))
   return Number.isFinite(date.getTime())
-    ? new Intl.DateTimeFormat("en", options ?? { month: "short", day: "numeric", year: "numeric" }).format(date)
-    : "Unknown"
+    ? new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en", options ?? { month: "short", day: "numeric", year: "numeric" }).format(date)
+    : locale === "ru" ? "Неизвестно" : "Unknown"
 }
 
 function statusOf(value: unknown): OpportunityStatus {
@@ -25,7 +26,7 @@ function trendOf(value: unknown): Trend {
   return value === "falling" ? "falling" : value === "stable" ? "steady" : "rising"
 }
 
-function clusterFromRow(row: Row): DemandCluster {
+function clusterFromRow(row: Row, locale: "en" | "ru"): DemandCluster {
   const memberships = Array.isArray(row.cluster_memberships) ? (row.cluster_memberships as Row[]) : []
   const evidence: Evidence[] = memberships.map((membership) => {
     const item = (membership.evidence_items as Row | null) ?? {}
@@ -35,7 +36,7 @@ function clusterFromRow(row: Row): DemandCluster {
       id: String(item.id),
       platform: String(source.display_name ?? "Public web"),
       sourceUrl: String(item.canonical_url ?? ""),
-      date: formatDate(item.published_at),
+      date: formatDate(item.published_at, locale),
       excerpt: String(item.excerpt ?? item.title ?? ""),
       engagement: Object.entries(engagement).map(([key, value]) => `${value} ${key}`).join(" · ") || "Engagement unavailable",
       rationale: String(membership.matching_rationale ?? "Grouped by the deterministic evidence processor."),
@@ -52,8 +53,8 @@ function clusterFromRow(row: Row): DemandCluster {
       : "Deterministic score explanation is available after the next scan.",
     signalCount: Number(row.independent_signal_count),
     sourceCount: Number(row.independent_source_count),
-    firstDetected: formatDate(row.first_detected_at),
-    lastDetected: formatDate(row.last_detected_at),
+    firstDetected: formatDate(row.first_detected_at, locale),
+    lastDetected: formatDate(row.last_detected_at, locale),
     trend: trendOf(row.trend),
     publicCapability: textOf(row.public_match),
     roadmapCapability: null,
@@ -72,6 +73,7 @@ function changedAfter(value: unknown, checkpoint: string | null) {
 
 export default async function PulsePage({ params }: { params: Promise<{ productId: string }> }) {
   const { productId } = await params
+  const locale = (await cookies()).get("demand-radar-locale")?.value === "ru" ? "ru" : "en"
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -97,7 +99,7 @@ export default async function PulsePage({ params }: { params: Promise<{ productI
   ])
 
   const checkpoint = state?.last_pulse_checked_at ?? null
-  const clusters = ((clusterRows ?? []) as Row[]).map(clusterFromRow)
+  const clusters = ((clusterRows ?? []) as Row[]).map((row) => clusterFromRow(row, locale))
   const rawClusters = (clusterRows ?? []) as Row[]
   const changedClusters = rawClusters.filter((row) => changedAfter(row.last_detected_at, checkpoint))
   const changedEvidence = changedClusters.flatMap((row) => {
@@ -109,7 +111,7 @@ export default async function PulsePage({ params }: { params: Promise<{ productI
   const latestScan = (scanRows?.[0] ?? null) as Row | null
   const scans: PulseScan[] = ((scanRows ?? []) as Row[]).map((row) => ({
     id: String(row.id),
-    date: formatDate(row.created_at, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+    date: formatDate(row.created_at, locale, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
     status: row.status === "completed" ? "Completed" : row.status === "failed" ? "Partial" : String(row.status ?? "Queued"),
     attempted: Number(row.sources_attempted ?? 0),
     succeeded: Number(row.sources_succeeded ?? 0),
@@ -124,7 +126,7 @@ export default async function PulsePage({ params }: { params: Promise<{ productI
       status: String(row.status ?? "draft"),
       text: String(row.plain_text ?? ""),
       clusterTitle: cluster.title ? String(cluster.title) : null,
-      updatedAt: formatDate(row.updated_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
+      updatedAt: formatDate(row.updated_at, locale, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
     }
   })
 
@@ -139,7 +141,7 @@ export default async function PulsePage({ params }: { params: Promise<{ productI
   const actions: PulseAction[] = ((actionRows.data ?? []) as Row[]).map((row) => ({
     id: String(row.id),
     action: String(row.action ?? "saved"),
-    createdAt: formatDate(row.created_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
+    createdAt: formatDate(row.created_at, locale, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
     clusterTitle: clusters.find((cluster) => cluster.id === String(row.cluster_id))?.title ?? "Demand signal",
   }))
 

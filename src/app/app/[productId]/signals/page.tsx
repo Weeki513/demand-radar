@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import type { DemandCluster, Evidence, OpportunityStatus, Trend } from "@/lib/demo-data"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { LocalizedText } from "@/lib/i18n"
+import { cookies } from "next/headers"
 
 type Row = Record<string, unknown>
 
@@ -14,18 +15,18 @@ function textOf(value: unknown) {
   return value && typeof value === "object" ? String((value as Row).text ?? "") || null : null
 }
 
-function formatDate(value: unknown) {
+function formatDate(value: unknown, locale: "en" | "ru") {
   const date = new Date(String(value ?? ""))
   return Number.isFinite(date.getTime())
-    ? new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(date)
-    : "Unknown"
+    ? new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en", { month: "short", day: "numeric", year: "numeric" }).format(date)
+    : locale === "ru" ? "Неизвестно" : "Unknown"
 }
 
 function statusOf(value: unknown): OpportunityStatus {
   return value === "existing" ? "Existing" : value === "roadmap" ? "Roadmap" : "Unmapped opportunity"
 }
 
-function clusterFromRow(row: Row): DemandCluster {
+function clusterFromRow(row: Row, locale: "en" | "ru"): DemandCluster {
   const memberships = Array.isArray(row.cluster_memberships) ? (row.cluster_memberships as Row[]) : []
   const evidence: Evidence[] = memberships.map((membership) => {
     const item = (membership.evidence_items as Row | null) ?? {}
@@ -33,12 +34,12 @@ function clusterFromRow(row: Row): DemandCluster {
     const engagement = (item.engagement as Row | null) ?? {}
     return {
       id: String(item.id),
-      platform: String(source.display_name ?? "Public web"),
+      platform: String(source.display_name ?? (locale === "ru" ? "Публичный интернет" : "Public web")),
       sourceUrl: String(item.canonical_url),
-      date: formatDate(item.published_at),
+      date: formatDate(item.published_at, locale),
       excerpt: String(item.excerpt ?? item.title ?? ""),
-      engagement: Object.entries(engagement).map(([key, value]) => `${value} ${key}`).join(" · ") || "Engagement unavailable",
-      rationale: String(membership.matching_rationale ?? "Grouped by the deterministic evidence processor."),
+      engagement: Object.entries(engagement).map(([key, value]) => `${value} ${key}`).join(" · ") || (locale === "ru" ? "Данные о вовлечённости недоступны" : "Engagement unavailable"),
+      rationale: String(membership.matching_rationale ?? (locale === "ru" ? "Сгруппировано детерминированным обработчиком свидетельств." : "Grouped by the deterministic evidence processor.")),
     }
   })
   const explanation = (row.score_explanation as Row | null) ?? {}
@@ -52,8 +53,8 @@ function clusterFromRow(row: Row): DemandCluster {
       : "Deterministic score explanation is available after the next scan.",
     signalCount: Number(row.independent_signal_count),
     sourceCount: Number(row.independent_source_count),
-    firstDetected: formatDate(row.first_detected_at),
-    lastDetected: formatDate(row.last_detected_at),
+    firstDetected: formatDate(row.first_detected_at, locale),
+    lastDetected: formatDate(row.last_detected_at, locale),
     trend: String(row.trend) as Trend,
     publicCapability: textOf(row.public_match),
     roadmapCapability: textOf(row.private_match),
@@ -66,13 +67,14 @@ function clusterFromRow(row: Row): DemandCluster {
 
 export default async function SignalsPage({ params }: { params: Promise<{ productId: string }> }) {
   const { productId } = await params
+  const locale = (await cookies()).get("demand-radar-locale")?.value === "ru" ? "ru" : "en"
   const supabase = await createSupabaseServerClient()
   const { data } = await supabase
     .from("demand_clusters")
     .select("*,public_match:product_context_items!related_public_context_id(text),private_match:product_context_items!related_private_context_id(text),cluster_memberships(matching_rationale,evidence_items(id,canonical_url,title,excerpt,published_at,engagement,source_configs(display_name)))")
     .eq("product_id", productId)
     .order("score", { ascending: false })
-  const clusters = ((data ?? []) as Row[]).map(clusterFromRow)
+  const clusters = ((data ?? []) as Row[]).map((row) => clusterFromRow(row, locale))
   const totalSignals = clusters.reduce((sum, cluster) => sum + cluster.signalCount, 0)
   const totalSources = new Set(clusters.flatMap((cluster) => cluster.evidence.map((item) => item.platform))).size
   const metrics = [
