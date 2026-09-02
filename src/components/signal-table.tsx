@@ -74,7 +74,7 @@ export function SignalTable({ clusters, compact = false }: { clusters: DemandClu
                     <span className="font-mono text-base font-medium tracking-[-0.04em]">{cluster.score}</span>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    <span className="text-xs text-muted-foreground">{cluster.signalCount} {locale === "ru" ? "сигналов" : "signals"} · {cluster.sourceCount} {locale === "ru" ? "источников" : "sources"}</span>
+                    <span className="text-xs text-muted-foreground">{cluster.signalCount} {locale === "ru" ? t("signals") : "signals"} · {cluster.sourceCount} {locale === "ru" ? t("sources") : "sources"}</span>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell"><TrendBadge trend={cluster.trend} /></TableCell>
                   <TableCell className="hidden lg:table-cell"><StatusBadge status={cluster.status} /></TableCell>
@@ -86,9 +86,9 @@ export function SignalTable({ clusters, compact = false }: { clusters: DemandClu
                       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_240px] lg:pl-10">
                         <div>
                           <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                            <span>{cluster.signalCount} {locale === "ru" ? "независимых сигналов" : "independent signals"}</span>
+                            <span>{cluster.signalCount} {locale === "ru" ? t("independent signals") : "independent signals"}</span>
                             <span aria-hidden>·</span>
-                            <span>{cluster.sourceCount} {locale === "ru" ? "источников" : "sources"}</span>
+                            <span>{cluster.sourceCount} {locale === "ru" ? t("sources") : "sources"}</span>
                             <span aria-hidden>·</span>
                             <span>{locale === "ru" ? "Впервые обнаружено" : "First detected"} {cluster.firstDetected}</span>
                           </div>
@@ -110,7 +110,7 @@ export function SignalTable({ clusters, compact = false }: { clusters: DemandClu
                         </div>
                         <aside className="border-l pl-4 lg:border-l">
                           <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">{t("Suggested action")}</p>
-                          <p className="mt-2 text-sm leading-6">{cluster.action}</p>
+                          <p className="mt-2 text-sm leading-6">{t(cluster.action)}</p>
                           {cluster.publicCapability ? <p className="mt-4 text-xs text-muted-foreground">{t("Public match")}: <span className="text-foreground">{cluster.publicCapability}</span></p> : null}
                           {cluster.roadmapCapability ? <p className="mt-2 text-xs text-muted-foreground">{t("Private roadmap match")}: <span className="text-foreground">{cluster.roadmapCapability}</span></p> : null}
                         </aside>

@@ -7,6 +7,8 @@ test("Russian locale translates core UI and dynamic summaries", () => {
   assert.equal(translate("ru", "Demand signals"), "Сигналы спроса")
   assert.equal(translate("ru", "16 clusters · 25 independent signals · 5 sources"), "16 кластеров · 25 независимых сигналов · 5 источников")
   assert.equal(translate("ru", "14 high-confidence opportunities"), "14 возможностей с высокой уверенностью")
+  assert.equal(translate("ru", "independent signals"), "независимых сигналов")
+  assert.equal(translate("ru", "Investigate this repeated unmet need as a new product opportunity."), "Изучите повторяющуюся неудовлетворённую потребность как новую продуктовую возможность.")
 })
 
 test("English locale and unknown product content remain unchanged", () => {
