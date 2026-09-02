@@ -149,6 +149,7 @@ const ru: Record<string, string> = {
   "Private": "Приватно",
   "All changes saved": "Все изменения сохранены",
   "Save context": "Сохранить контекст",
+  "Clear context": "Очистить контекст",
   "AI-assisted editing": "Редактирование с ИИ",
   "Weighted from volume, source diversity, recency, momentum, and normalized engagement.": "Взвешено по объёму, разнообразию источников, давности, динамике и нормализованной вовлечённости.",
   "Deterministic score explanation is available after the next scan.": "Детерминированное объяснение оценки появится после следующего сканирования.",

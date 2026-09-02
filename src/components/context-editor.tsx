@@ -261,6 +261,20 @@ export function ContextEditor({ product, initialItems }: ContextEditorProps) {
     }
   }
 
+  async function clearContext() {
+    setStatus("saving")
+    setError(null)
+    try {
+      await Promise.all(items.filter((item) => !item.id.startsWith("local-")).map((item) => requestJson<unknown>(`/api/products/${product.id}/context/${item.id}`, { method: "DELETE" })))
+      setItems([])
+      setDirtyIds(new Set())
+      setStatus("saved")
+    } catch (requestError) {
+      setStatus("error")
+      setError(requestError instanceof Error ? requestError.message : "Could not clear product context")
+    }
+  }
+
   async function saveContext(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setStatus("saving")
@@ -300,7 +314,7 @@ export function ContextEditor({ product, initialItems }: ContextEditorProps) {
   }
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px]">
+    <div className="grid gap-10">
       <form className="flex flex-col gap-8" onSubmit={saveContext}>
         <FieldGroup>
           <Field><FieldLabel htmlFor="product-url">{t("Public product URL")}</FieldLabel><div className="flex items-center gap-2"><Input id="product-url" type="url" value={productUrl} onChange={(event) => { setProductUrl(event.target.value); setStatus("dirty") }} /><Button type="button" size="sm" onClick={() => void autofillFromUrl()} disabled={analyzing || !productUrl.trim()}><WandSparkles data-icon="inline-start" />{analyzing ? (locale === "ru" ? "Анализируем…" : "Analyzing…") : (locale === "ru" ? "Заполнить" : "Autofill")}</Button></div><FieldDescription>{locale === "ru" ? "Используем его, чтобы понять публичные возможности продукта перед сопоставлением со спросом." : "We use this to understand the public surface area before matching demand."}</FieldDescription></Field>
@@ -313,7 +327,7 @@ export function ContextEditor({ product, initialItems }: ContextEditorProps) {
         <EditableList label="Private roadmap" description="Kept private and used only for internal classification." items={items} kinds={["roadmap"]} defaultKind="roadmap" visibility="private" multiline onChange={updateText} onMagicWand={rewriteText} onAdd={addItem} onDelete={deleteItem} />
         <EditableList label="Relevant keywords" description="Terms and concepts that help source adapters find useful evidence." items={items} kinds={["keyword"]} defaultKind="keyword" visibility="public" onChange={updateText} onMagicWand={rewriteText} onAdd={addItem} onDelete={deleteItem} />
         {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
-        <div className="flex items-center justify-between gap-4 border-t pt-5"><span className="flex items-center gap-2 text-xs text-muted-foreground">{status === "saved" ? <><span className="size-1.5 rounded-full bg-foreground" aria-hidden /> {t("All changes saved")}</> : status === "saving" ? <><span className="size-1.5 rounded-full bg-muted-foreground" aria-hidden /> {locale === "ru" ? "Сохранение изменений…" : "Saving changes…"}</> : <><span className="size-1.5 rounded-full bg-muted-foreground" aria-hidden /> {t("Unsaved changes")}</>}</span><Button type="submit" disabled={status === "saving"}>{t(status === "saving" ? "Saving…" : "Save context")}</Button></div>
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t pt-5"><span className="flex items-center gap-2 text-xs text-muted-foreground">{status === "saved" ? <><span className="size-1.5 rounded-full bg-foreground" aria-hidden /> {t("All changes saved")}</> : status === "saving" ? <><span className="size-1.5 rounded-full bg-muted-foreground" aria-hidden /> {locale === "ru" ? "Сохранение изменений…" : "Saving changes…"}</> : <><span className="size-1.5 rounded-full bg-muted-foreground" aria-hidden /> {t("Unsaved changes")}</>}</span><div className="flex gap-2"><Button type="button" variant="outline" onClick={() => void clearContext()} disabled={status === "saving"}>{t("Clear context")}</Button><Button type="submit" disabled={status === "saving"}>{t(status === "saving" ? "Saving…" : "Save context")}</Button></div></div>
       </form>
     </div>
   )
