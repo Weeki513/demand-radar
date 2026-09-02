@@ -17,7 +17,8 @@ export function LandingPage() {
         </Link>
         <nav className="flex items-center gap-3 text-xs">
           <a href="https://github.com/Weeki513/demand-radar" target="_blank" rel="noreferrer" className="hidden text-muted-foreground hover:text-foreground sm:inline-flex sm:items-center sm:gap-1.5"><GitBranch aria-hidden /> GitHub</a>
-          <Button variant="outline" size="sm" asChild><Link href="/login">Sign in</Link></Button>
+          <Button variant="outline" size="sm" asChild><Link href="/login">Login</Link></Button>
+          <Button size="sm" asChild><Link href="/signup">Register</Link></Button>
         </nav>
       </header>
 
