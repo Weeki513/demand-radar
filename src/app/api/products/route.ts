@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 
 import { createSupabaseServerClient } from "@/lib/supabase/server"
+import { DEFAULT_SOURCE_CONFIGS } from "@/sources/default-configs"
 
 const createSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -37,7 +38,10 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.redirect(new URL("/app/new?error=create-failed", request.url), 303)
   }
-  await supabase.from("scan_configs").insert({ product_id: product.id })
+  await Promise.all([
+    supabase.from("scan_configs").insert({ product_id: product.id }),
+    supabase.from("source_configs").insert(DEFAULT_SOURCE_CONFIGS.map((config) => ({ ...config, product_id: product.id }))),
+  ])
 
   return NextResponse.redirect(new URL(`/app/${product.id}/context`, request.url), 303)
 }

@@ -3,6 +3,7 @@ import { z } from "zod"
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
+import { DEFAULT_SOURCE_CONFIGS } from "@/sources/default-configs"
 
 const signupSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -36,6 +37,9 @@ export async function POST(request: Request) {
     .single()
   if (productError || !product) return NextResponse.redirect(new URL("/app/new?error=workspace-create-failed", request.url), 303)
 
-  await supabase.from("scan_configs").insert({ product_id: product.id })
+  await Promise.all([
+    supabase.from("scan_configs").insert({ product_id: product.id }),
+    supabase.from("source_configs").insert(DEFAULT_SOURCE_CONFIGS.map((config) => ({ ...config, product_id: product.id }))),
+  ])
   return NextResponse.redirect(new URL(`/app/${product.id}/context`, request.url), 303)
 }

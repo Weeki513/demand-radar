@@ -74,7 +74,15 @@ async function collectOneSource(run: Row, workerId: string) {
   })
   if (claimError) throw new Error(claimError.message)
   const attempt = one(claimed as Row | Row[] | null)
-  if (!attempt) return { kind: "idle" as const }
+  if (!attempt) {
+    const { error } = await admin.rpc("fail_scan", {
+      p_scan_run_id: run.id,
+      p_worker_id: workerId,
+      p_error_summary: { code: "NO_ENABLED_SOURCES", message: "No enabled source adapters are configured." },
+    })
+    if (error) throw new Error(error.message)
+    return { kind: "source_failed" as const, source: "none" }
+  }
 
   const { data: configRow, error: configError } = await admin
     .from("source_configs")
