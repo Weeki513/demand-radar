@@ -15,6 +15,17 @@ test.describe("Demand Radar production smoke", () => {
     expect(sidebarBox?.x).toBe(0)
     expect(headerBox?.x).toBe(sidebarBox?.width)
 
+    await page.getByRole("button", { name: "RU", exact: true }).click()
+    await expect(page.getByRole("button", { name: "RU", exact: true })).toHaveAttribute("aria-pressed", "true")
+    await expect(page.getByRole("navigation", { name: "Навигация рабочего пространства" })).toBeVisible()
+    await expect(page.getByRole("columnheader", { name: "Кластер спроса" })).toBeVisible()
+    const hasRussianHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)
+    expect(hasRussianHorizontalOverflow).toBe(false)
+    await page.reload()
+    await expect(page.locator("html")).toHaveAttribute("lang", "ru")
+    await expect(page.getByRole("button", { name: "RU", exact: true })).toHaveAttribute("aria-pressed", "true")
+    await page.getByRole("button", { name: "EN", exact: true }).click()
+
     await page.getByRole("link", { name: "Demand signals", exact: true }).click()
     await expect(page).toHaveURL(/\/signals$/)
     await expect(page.getByRole("heading", { name: "Demand signals", exact: true })).toBeVisible()

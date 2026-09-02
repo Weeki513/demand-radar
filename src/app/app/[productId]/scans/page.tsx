@@ -14,7 +14,7 @@ export default async function ScansPage({ params }: { params: Promise<{ productI
     .limit(30)
   const scans: ScanHistoryRow[] = (data ?? []).map((row) => ({
     id: row.id,
-    date: new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(row.created_at)),
+    date: row.created_at,
     duration: row.duration_ms ? `${Math.floor(row.duration_ms / 60_000)}m ${Math.floor((row.duration_ms % 60_000) / 1_000)}s` : "Queued",
     status: row.status === "completed" ? "Completed" : row.status === "failed" ? "Partial" : row.status,
     attempted: row.sources_attempted,

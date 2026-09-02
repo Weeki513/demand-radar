@@ -24,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { DemoProduct } from "@/lib/demo-data"
+import { useLocale } from "@/lib/i18n"
 
 export type ContextItemKind =
   | "positioning"
@@ -113,6 +114,7 @@ function EditableList({
   onDelete: (item: ContextItem) => Promise<void>
 }) {
   const [draft, setDraft] = useState("")
+  const { t } = useLocale()
   const visibleItems = items.filter((item) => kinds.includes(item.kind))
 
   async function addItem() {
@@ -124,25 +126,25 @@ function EditableList({
 
   return (
     <FieldSet>
-      <FieldLegend variant="label">{label}</FieldLegend>
-      <FieldDescription>{description}</FieldDescription>
+      <FieldLegend variant="label">{t(label)}</FieldLegend>
+      <FieldDescription>{t(description)}</FieldDescription>
       <div className="flex flex-col gap-2">
         {visibleItems.map((item) => (
           <div key={item.id} className="flex items-start gap-2 border-b pb-2">
             {multiline ? (
-              <Textarea value={item.text} onChange={(event) => onChange(item.id, event.target.value)} rows={2} aria-label={`${label} item`} />
+              <Textarea value={item.text} onChange={(event) => onChange(item.id, event.target.value)} rows={2} aria-label={`${t(label)} — ${t("item")}`} />
             ) : (
-              <Input value={item.text} onChange={(event) => onChange(item.id, event.target.value)} aria-label={`${label} item`} />
+              <Input value={item.text} onChange={(event) => onChange(item.id, event.target.value)} aria-label={`${t(label)} — ${t("item")}`} />
             )}
-            {item.visibility === "private" ? <span className="mt-2 shrink-0 text-[10px] uppercase tracking-[0.08em] text-muted-foreground">Private</span> : null}
-            <Button type="button" variant="ghost" size="icon-sm" aria-label={`Delete ${item.text}`} onClick={() => void onDelete(item)}><X aria-hidden /></Button>
+            {item.visibility === "private" ? <span className="mt-2 shrink-0 text-[10px] uppercase tracking-[0.08em] text-muted-foreground">{t("Private")}</span> : null}
+            <Button type="button" variant="ghost" size="icon-sm" aria-label={`${t("Delete")} ${item.text}`} onClick={() => void onDelete(item)}><X aria-hidden /></Button>
           </div>
         ))}
         <div className="flex items-start gap-2 pt-1">
           {multiline ? (
-            <Textarea value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void addItem() } }} placeholder={`Add ${label.toLowerCase()} item`} aria-label={`Add ${label.toLowerCase()} item`} rows={2} />
+            <Textarea value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void addItem() } }} placeholder={`${t("Add")} ${t(label).toLowerCase()}`} aria-label={`${t("Add")} ${t(label).toLowerCase()}`} rows={2} />
           ) : (
-            <Input value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void addItem() } }} placeholder={`Add ${label.toLowerCase()} item`} aria-label={`Add ${label.toLowerCase()} item`} />
+            <Input value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void addItem() } }} placeholder={`${t("Add")} ${t(label).toLowerCase()}`} aria-label={`${t("Add")} ${t(label).toLowerCase()}`} />
           )}
           <Button type="button" variant="outline" size="icon-sm" aria-label={`Add ${label.toLowerCase()} item`} onClick={() => void addItem()}><Plus aria-hidden /></Button>
         </div>
@@ -152,6 +154,7 @@ function EditableList({
 }
 
 function MagicWandDialog({ productId, onItemsCreated }: { productId: string; onItemsCreated: (items: ContextItem[]) => void }) {
+  const { locale, t } = useLocale()
   const [open, setOpen] = useState(false)
   const [thought, setThought] = useState("")
   const [preview, setPreview] = useState<ProductPreview | null>(null)
@@ -214,20 +217,20 @@ function MagicWandDialog({ productId, onItemsCreated }: { productId: string; onI
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => { setOpen(nextOpen); if (!nextOpen) reset() }}>
-      <DialogTrigger asChild><Button type="button" variant="outline" size="sm"><WandSparkles data-icon="inline-start" /> Magic Wand</Button></DialogTrigger>
+      <DialogTrigger asChild><Button type="button" variant="outline" size="sm"><WandSparkles data-icon="inline-start" /> {locale === "ru" ? "Волшебная палочка" : "Magic Wand"}</Button></DialogTrigger>
       <DialogContent className="sm:max-w-lg">
-        <DialogHeader><DialogTitle>Turn a thought into product context</DialogTitle><DialogDescription>Luna structures only the public product model. Review every item, then accept or reject the preview before anything is saved.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>{locale === "ru" ? "Превратите мысль в контекст продукта" : "Turn a thought into product context"}</DialogTitle><DialogDescription>{locale === "ru" ? "Luna структурирует только публичную модель продукта. Проверьте каждый пункт перед сохранением." : "Luna structures only the public product model. Review every item, then accept or reject the preview before anything is saved."}</DialogDescription></DialogHeader>
         <FieldGroup>
-          <Field><FieldLabel htmlFor="magic-thought">Unstructured thought</FieldLabel><Textarea id="magic-thought" value={thought} onChange={(event) => setThought(event.target.value)} placeholder="We're working on making browser sessions survive authentication failures..." rows={4} /></Field>
+          <Field><FieldLabel htmlFor="magic-thought">{locale === "ru" ? "Неструктурированная мысль" : "Unstructured thought"}</FieldLabel><Textarea id="magic-thought" value={thought} onChange={(event) => setThought(event.target.value)} placeholder={locale === "ru" ? "Мы работаем над сохранением браузерных сессий после ошибок авторизации…" : "We're working on making browser sessions survive authentication failures..."} rows={4} /></Field>
         </FieldGroup>
         {entries.length ? (
           <div className="max-h-72 overflow-y-auto border-y py-3">
-            <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">Preview — choose what to add</p>
+            <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">{locale === "ru" ? "Предпросмотр — выберите, что добавить" : "Preview — choose what to add"}</p>
             <div className="flex flex-col gap-2">
               {entries.map((entry) => (
                 <label key={entry.id} className="flex cursor-pointer items-start gap-3 text-sm leading-5">
                   <input type="checkbox" checked={selected.has(entry.id)} onChange={(event) => setSelected((current) => { const next = new Set(current); if (event.target.checked) next.add(entry.id); else next.delete(entry.id); return next })} className="mt-1 accent-foreground" />
-                  <span><span className="block text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{entry.label}</span>{entry.text}</span>
+                  <span><span className="block text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{t(entry.label)}</span>{entry.text}</span>
                 </label>
               ))}
             </div>
@@ -235,8 +238,8 @@ function MagicWandDialog({ productId, onItemsCreated }: { productId: string; onI
         ) : null}
         {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => { setOpen(false); reset() }}>Reject</Button>
-          {preview ? <Button type="button" onClick={() => void acceptPreview()} disabled={accepting}>{accepting ? "Saving…" : "Accept selected"}</Button> : <Button type="button" onClick={() => void structureThought()} disabled={loading || thought.trim().length < 3}>{loading ? "Structuring…" : "Structure thought"} <WandSparkles data-icon="inline-end" /></Button>}
+          <Button type="button" variant="outline" onClick={() => { setOpen(false); reset() }}>{locale === "ru" ? "Отклонить" : "Reject"}</Button>
+          {preview ? <Button type="button" onClick={() => void acceptPreview()} disabled={accepting}>{accepting ? t("Saving…") : locale === "ru" ? "Принять выбранное" : "Accept selected"}</Button> : <Button type="button" onClick={() => void structureThought()} disabled={loading || thought.trim().length < 3}>{loading ? locale === "ru" ? "Структурирование…" : "Structuring…" : locale === "ru" ? "Структурировать мысль" : "Structure thought"} <WandSparkles data-icon="inline-end" /></Button>}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -244,6 +247,7 @@ function MagicWandDialog({ productId, onItemsCreated }: { productId: string; onI
 }
 
 export function ContextEditor({ product, initialItems }: ContextEditorProps) {
+  const { locale, t } = useLocale()
   const initialWithFallbacks = useMemo(() => {
     const items = [...initialItems]
     if (!items.some((item) => item.kind === "positioning") && product.positioning.trim()) {
@@ -343,7 +347,7 @@ export function ContextEditor({ product, initialItems }: ContextEditorProps) {
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px]">
       <form className="flex flex-col gap-8" onSubmit={saveContext}>
         <FieldGroup>
-          <Field><FieldLabel htmlFor="product-url">Public product URL</FieldLabel><Input id="product-url" type="url" value={productUrl} onChange={(event) => { setProductUrl(event.target.value); setStatus("dirty") }} /><FieldDescription>We use this to understand the public surface area before matching demand.</FieldDescription></Field>
+          <Field><FieldLabel htmlFor="product-url">{t("Public product URL")}</FieldLabel><Input id="product-url" type="url" value={productUrl} onChange={(event) => { setProductUrl(event.target.value); setStatus("dirty") }} /><FieldDescription>{locale === "ru" ? "Используем его, чтобы понять публичные возможности продукта перед сопоставлением со спросом." : "We use this to understand the public surface area before matching demand."}</FieldDescription></Field>
         </FieldGroup>
         <EditableList label="Positioning" description="The clearest sentence describing why this product exists." items={items} kinds={["positioning"]} defaultKind="positioning" visibility="public" multiline onChange={updateText} onAdd={addItem} onDelete={deleteItem} />
         <EditableList label="Ideal customer profile" description="Who gets the most value from this product." items={items} kinds={["icp"]} defaultKind="icp" visibility="public" multiline onChange={updateText} onAdd={addItem} onDelete={deleteItem} />
@@ -353,12 +357,12 @@ export function ContextEditor({ product, initialItems }: ContextEditorProps) {
         <EditableList label="Private roadmap" description="Kept private and used only for internal classification." items={items} kinds={["roadmap"]} defaultKind="roadmap" visibility="private" multiline onChange={updateText} onAdd={addItem} onDelete={deleteItem} />
         <EditableList label="Relevant keywords" description="Terms and concepts that help source adapters find useful evidence." items={items} kinds={["keyword"]} defaultKind="keyword" visibility="public" onChange={updateText} onAdd={addItem} onDelete={deleteItem} />
         {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
-        <div className="flex items-center justify-between gap-4 border-t pt-5"><span className="flex items-center gap-2 text-xs text-muted-foreground">{status === "saved" ? <><span className="size-1.5 rounded-full bg-foreground" aria-hidden /> All changes saved</> : status === "saving" ? <><span className="size-1.5 rounded-full bg-muted-foreground" aria-hidden /> Saving changes…</> : <><span className="size-1.5 rounded-full bg-muted-foreground" aria-hidden /> Unsaved changes</>}</span><Button type="submit" disabled={status === "saving"}>{status === "saving" ? "Saving…" : "Save context"}</Button></div>
+        <div className="flex items-center justify-between gap-4 border-t pt-5"><span className="flex items-center gap-2 text-xs text-muted-foreground">{status === "saved" ? <><span className="size-1.5 rounded-full bg-foreground" aria-hidden /> {t("All changes saved")}</> : status === "saving" ? <><span className="size-1.5 rounded-full bg-muted-foreground" aria-hidden /> {locale === "ru" ? "Сохранение изменений…" : "Saving changes…"}</> : <><span className="size-1.5 rounded-full bg-muted-foreground" aria-hidden /> {t("Unsaved changes")}</>}</span><Button type="submit" disabled={status === "saving"}>{t(status === "saving" ? "Saving…" : "Save context")}</Button></div>
       </form>
       <aside className="flex flex-col gap-5 lg:border-l lg:pl-7">
-        <div><p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">AI-assisted editing</p><h2 className="mt-2 text-base font-medium">Keep the model close to the source.</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Generated context and your own notes live together. You can edit or remove every item before it affects matching.</p></div>
+        <div><p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">{t("AI-assisted editing")}</p><h2 className="mt-2 text-base font-medium">{locale === "ru" ? "Держите модель близко к источнику." : "Keep the model close to the source."}</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">{locale === "ru" ? "Сгенерированный контекст и ваши заметки хранятся вместе. Каждый пункт можно изменить или удалить до сопоставления." : "Generated context and your own notes live together. You can edit or remove every item before it affects matching."}</p></div>
         <MagicWandDialog productId={product.id} onItemsCreated={(createdItems) => { setItems((current) => [...current, ...createdItems]); setStatus("saved") }} />
-        <div className="flex gap-2 border-t pt-5 text-xs leading-5 text-muted-foreground"><Lightbulb aria-hidden className="mt-0.5 shrink-0" /> Tip: write the private roadmap in language your team actually uses. Matching gets clearer when the context is specific.</div>
+        <div className="flex gap-2 border-t pt-5 text-xs leading-5 text-muted-foreground"><Lightbulb aria-hidden className="mt-0.5 shrink-0" /> {locale === "ru" ? "Совет: описывайте приватный план словами, которыми действительно пользуется команда. Чем конкретнее контекст, тем точнее сопоставление." : "Tip: write the private roadmap in language your team actually uses. Matching gets clearer when the context is specific."}</div>
       </aside>
     </div>
   )

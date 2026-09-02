@@ -3,9 +3,11 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { useLocale } from "@/lib/i18n"
 
 export function RunScanButton({ productId }: { productId: string }) {
   const [state, setState] = useState<"idle" | "queued" | "error">("idle")
+  const { t } = useLocale()
 
   async function run() {
     setState("idle")
@@ -17,5 +19,5 @@ export function RunScanButton({ productId }: { productId: string }) {
     setState(response.ok ? "queued" : "error")
   }
 
-  return <Button type="button" onClick={run} disabled={state === "queued"}>{state === "queued" ? "Scan queued" : state === "error" ? "Retry scan" : "Run now"}</Button>
+  return <Button type="button" onClick={run} disabled={state === "queued"}>{t(state === "queued" ? "Scan queued" : state === "error" ? "Retry scan" : "Run now")}</Button>
 }

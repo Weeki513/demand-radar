@@ -3,6 +3,7 @@ import { ContextEditor, type ContextItem, type ContextItemKind } from "@/compone
 import { productFromRow } from "@/lib/product-data"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
+import { LocalizedText } from "@/lib/i18n"
 
 export default async function ContextPage({ params }: { params: Promise<{ productId: string }> }) {
   const { productId } = await params
@@ -20,5 +21,5 @@ export default async function ContextPage({ params }: { params: Promise<{ produc
     sort_order: item.sort_order,
     metadata: item.metadata as Record<string, unknown> | undefined,
   })) satisfies ContextItem[]
-  return <div className="flex flex-col gap-8"><PageHeader eyebrow="Product model" title="Product context" description="The shared model behind every demand match. Keep what is public, what is planned, and what is still just a thought in one editable place." actions={<span className="text-xs text-muted-foreground">Last analyzed today</span>} /><ContextEditor product={product} initialItems={contextItems} /></div>
+  return <div className="flex flex-col gap-8"><PageHeader eyebrow="Product model" title="Product context" description="The shared model behind every demand match. Keep what is public, what is planned, and what is still just a thought in one editable place." actions={<span className="text-xs text-muted-foreground"><LocalizedText text="Last analyzed today" /></span>} /><ContextEditor product={product} initialItems={contextItems} /></div>
 }

@@ -1,12 +1,15 @@
 import type { ReactNode } from "react"
 import { notFound, redirect } from "next/navigation"
+import { cookies } from "next/headers"
 
 import { AppShell } from "@/components/app-shell"
 import { productFromRow } from "@/lib/product-data"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
+import type { Locale } from "@/lib/i18n"
 
 export default async function ProductLayout({ children, params }: { children: ReactNode; params: Promise<{ productId: string }> }) {
   const { productId } = await params
+  const locale = ((await cookies()).get("demand-radar-locale")?.value === "ru" ? "ru" : "en") satisfies Locale
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/login")
@@ -19,5 +22,5 @@ export default async function ProductLayout({ children, params }: { children: Re
   const product = products.find((item) => item.id === productId)
   if (!product) notFound()
 
-  return <AppShell product={product} products={products}>{children}</AppShell>
+  return <AppShell product={product} products={products} initialLocale={locale}>{children}</AppShell>
 }
