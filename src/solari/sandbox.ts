@@ -87,10 +87,7 @@ export async function processEvidenceInSolariSandbox(input: {
         "-c",
         [
           "import threading, time",
-          "def _heartbeat():",
-          "  while True:",
-          "    print('processor heartbeat', flush=True)",
-          "    time.sleep(10)",
+          "exec(\"def _heartbeat():\\n  while True:\\n    print('processor heartbeat', flush=True)\\n    time.sleep(10)\")",
           "threading.Thread(target=_heartbeat, daemon=True).start()",
           "import json, sys",
           "from datetime import datetime",
