@@ -85,6 +85,7 @@ const ru: Record<string, string> = {
   "Last 90 days": "Последние 90 дней",
   "Run now": "Запустить",
   "Scan queued": "Сканирование в очереди",
+  "Scanning…": "Сканирование…",
   "Retry scan": "Повторить сканирование",
   "Recurring research": "Регулярное исследование",
   "Manual and scheduled scans share one pipeline. Review what ran, which sources succeeded, and how raw evidence became clusters.": "Ручные и запланированные сканирования используют один процесс. Проверьте запуск, успешные источники и формирование кластеров.",

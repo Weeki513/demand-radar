@@ -37,6 +37,11 @@ test("parses API adapters and excludes old records or pull requests", () => {
   assert.equal(parseGitLabIssues([{ id: 1, web_url: "https://gitlab.com/a/b/-/issues/1", title: "Issue", description: "Body", updated_at: "2026-08-30T00:00:00Z" }], config("gitlab"), cutoff, now).length, 1);
 });
 
+test("bounds long evidence excerpts to the persisted database limit", () => {
+  const [item] = parseGitHubIssues([{ id: 4, html_url: "https://github.com/a/b/issues/4", title: "Long issue", body: "x".repeat(9_000), updated_at: "2026-08-30T00:00:00Z" }], config("github_issues"), cutoff, now);
+  assert.equal(item.excerpt.length, 5_000);
+});
+
 test("parses RSS/Atom and browser page fixtures", () => {
   const xml = `<feed><entry><id>entry-1</id><title>Forum request</title><link href="https://example.com/post/1"/><summary>Need persistent sessions</summary><updated>2026-08-30T00:00:00Z</updated></entry></feed>`;
   const [rss] = parseRssAtom(xml, config("rss_atom"), cutoff, now, "https://example.com/feed.xml");

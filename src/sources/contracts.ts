@@ -9,6 +9,7 @@ export const MAX_PAGE_SIZE = 50;
 export const MAX_PAGES = 5;
 export const MAX_ITEMS = 100;
 export const MAX_TEXT_LENGTH = 20_000;
+export const MAX_EVIDENCE_EXCERPT_LENGTH = 5_000;
 
 export interface CollectInput {
   config: SourceConfig;
@@ -165,8 +166,10 @@ export interface EvidenceDraft {
 
 export function makeEvidence(draft: EvidenceDraft, now = new Date()): NormalizedEvidence {
   const collectedAt = draft.collectedAt ?? now.toISOString();
-  const title = cleanText(draft.title, 10_000);
-  const excerpt = cleanText(draft.excerpt);
+  const title = cleanText(draft.title, 1_000);
+  // Keep the normalized wire value within the database evidence constraint.
+  // Long issue bodies remain available in rawPayload/context where supported.
+  const excerpt = cleanText(draft.excerpt, MAX_EVIDENCE_EXCERPT_LENGTH);
   const context = draft.context ? cleanText(draft.context, MAX_TEXT_LENGTH) : undefined;
   const canonicalUrl = canonicalizeUrl(draft.url, draft.finalUrl ?? draft.requestUrl);
   return NormalizedEvidenceSchema.parse({
