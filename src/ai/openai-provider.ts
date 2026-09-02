@@ -6,6 +6,7 @@ import { z } from "zod"
 
 import {
   clusterInsightSchema,
+  contextRewriteSchema,
   postDraftSchema,
   productStructureSchema,
   type TextGenerationProvider,
@@ -72,6 +73,15 @@ export class OpenAITextGenerationProvider implements TextGenerationProvider {
       "post_rewrite",
       postDraftSchema,
       "Rewrite the supplied draft according to the instruction while preserving factual meaning. Return a preview only. Do not add product roadmap claims or unverifiable facts.",
+      JSON.stringify(input),
+    )
+  }
+
+  rewriteContext(input: Parameters<TextGenerationProvider["rewriteContext"]>[0]) {
+    return parse(
+      "context_rewrite",
+      contextRewriteSchema,
+      "Rewrite the supplied product-context field into one concise, specific statement that preserves its factual meaning. Do not invent features, customers, metrics, or roadmap claims. Return only the rewritten field text.",
       JSON.stringify(input),
     )
   }

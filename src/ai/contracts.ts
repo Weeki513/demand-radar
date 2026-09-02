@@ -22,9 +22,12 @@ export const postDraftSchema = z.object({
   body: z.string(),
 })
 
+export const contextRewriteSchema = z.object({ text: z.string().trim().min(1).max(2_000) })
+
 export type ProductStructure = z.infer<typeof productStructureSchema>
 export type ClusterInsight = z.infer<typeof clusterInsightSchema>
 export type PostDraft = z.infer<typeof postDraftSchema>
+export type ContextRewrite = z.infer<typeof contextRewriteSchema>
 
 export interface TextGenerationProvider {
   structureProduct(input: {
@@ -49,4 +52,8 @@ export interface TextGenerationProvider {
     body: string
     instruction: string
   }): Promise<PostDraft>
+  rewriteContext(input: {
+    kind: string
+    text: string
+  }): Promise<ContextRewrite>
 }

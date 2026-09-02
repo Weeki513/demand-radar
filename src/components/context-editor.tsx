@@ -1,18 +1,9 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Lightbulb, Plus, WandSparkles, X } from "lucide-react"
+import { Plus, WandSparkles, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import {
   Field,
   FieldDescription,
@@ -99,6 +90,7 @@ function EditableList({
   visibility,
   multiline = false,
   onChange,
+  onMagicWand,
   onAdd,
   onDelete,
 }: {
@@ -110,6 +102,7 @@ function EditableList({
   visibility: "public" | "private"
   multiline?: boolean
   onChange: (id: string, text: string) => void
+  onMagicWand: (id: string, kind: ContextItemKind, text: string) => Promise<string | null>
   onAdd: (kind: ContextItemKind, visibility: "public" | "private", text: string) => Promise<void>
   onDelete: (item: ContextItem) => Promise<void>
 }) {
@@ -136,6 +129,7 @@ function EditableList({
             ) : (
               <Input value={item.text} onChange={(event) => onChange(item.id, event.target.value)} aria-label={`${t(label)} — ${t("item")}`} />
             )}
+            <Button type="button" variant="default" size="icon-sm" aria-label={`${t("Rewrite")} ${t(label).toLowerCase()}`} title={t("Rewrite")} disabled={!item.text.trim()} onClick={() => void onMagicWand(item.id, item.kind, item.text).then((text) => { if (text) onChange(item.id, text) })}><WandSparkles aria-hidden /></Button>
             {item.visibility === "private" ? <span className="mt-2 shrink-0 text-[10px] uppercase tracking-[0.08em] text-muted-foreground">{t("Private")}</span> : null}
             <Button type="button" variant="ghost" size="icon-sm" aria-label={`${t("Delete")} ${item.text}`} onClick={() => void onDelete(item)}><X aria-hidden /></Button>
           </div>
@@ -146,103 +140,11 @@ function EditableList({
           ) : (
             <Input value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void addItem() } }} placeholder={`${t("Add")} ${t(label).toLowerCase()}`} aria-label={`${t("Add")} ${t(label).toLowerCase()}`} />
           )}
+          <Button type="button" variant="default" size="icon-sm" aria-label={`${t("Rewrite")} ${t(label).toLowerCase()}`} title={t("Rewrite")} disabled={!draft.trim()} onClick={() => void onMagicWand("draft", defaultKind, draft).then((text) => { if (text) setDraft(text) })}><WandSparkles aria-hidden /></Button>
           <Button type="button" variant="outline" size="icon-sm" aria-label={`Add ${label.toLowerCase()} item`} onClick={() => void addItem()}><Plus aria-hidden /></Button>
         </div>
       </div>
     </FieldSet>
-  )
-}
-
-function MagicWandDialog({ productId, onItemsCreated }: { productId: string; onItemsCreated: (items: ContextItem[]) => void }) {
-  const { locale, t } = useLocale()
-  const [open, setOpen] = useState(false)
-  const [thought, setThought] = useState("")
-  const [preview, setPreview] = useState<ProductPreview | null>(null)
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [loading, setLoading] = useState(false)
-  const [accepting, setAccepting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const entries = useMemo(() => preview ? entriesFromPreview(preview) : [], [preview])
-
-  function reset() {
-    setThought("")
-    setPreview(null)
-    setSelected(new Set())
-    setLoading(false)
-    setAccepting(false)
-    setError(null)
-  }
-
-  async function structureThought() {
-    setLoading(true)
-    setError(null)
-    try {
-      const result = await requestJson<{ preview: ProductPreview }>(`/api/products/${productId}/context/structure`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ thought }),
-      })
-      setPreview(result.preview)
-      setSelected(new Set(entriesFromPreview(result.preview).map((entry) => entry.id)))
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not structure this thought")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function acceptPreview() {
-    const acceptedEntries = entries.filter((entry) => selected.has(entry.id))
-    if (!acceptedEntries.length) {
-      setError("Select at least one item to add")
-      return
-    }
-    setAccepting(true)
-    setError(null)
-    try {
-      const results = await Promise.all(acceptedEntries.map((entry, index) => requestJson<RequestResult<ContextItem>>(`/api/products/${productId}/context`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ kind: entry.kind, text: entry.text, visibility: "public", source: "ai", sortOrder: index }),
-      })))
-      onItemsCreated(results.map((result) => result.item))
-      setOpen(false)
-      reset()
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not accept the structured context")
-    } finally {
-      setAccepting(false)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(nextOpen) => { setOpen(nextOpen); if (!nextOpen) reset() }}>
-      <DialogTrigger asChild><Button type="button" variant="outline" size="sm"><WandSparkles data-icon="inline-start" /> {locale === "ru" ? "Волшебная палочка" : "Magic Wand"}</Button></DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader><DialogTitle>{locale === "ru" ? "Превратите мысль в контекст продукта" : "Turn a thought into product context"}</DialogTitle><DialogDescription>{locale === "ru" ? "Luna структурирует только публичную модель продукта. Проверьте каждый пункт перед сохранением." : "Luna structures only the public product model. Review every item, then accept or reject the preview before anything is saved."}</DialogDescription></DialogHeader>
-        <FieldGroup>
-          <Field><FieldLabel htmlFor="magic-thought">{locale === "ru" ? "Неструктурированная мысль" : "Unstructured thought"}</FieldLabel><Textarea id="magic-thought" value={thought} onChange={(event) => setThought(event.target.value)} placeholder={locale === "ru" ? "Мы работаем над сохранением браузерных сессий после ошибок авторизации…" : "We're working on making browser sessions survive authentication failures..."} rows={4} /></Field>
-        </FieldGroup>
-        {entries.length ? (
-          <div className="max-h-72 overflow-y-auto border-y py-3">
-            <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">{locale === "ru" ? "Предпросмотр — выберите, что добавить" : "Preview — choose what to add"}</p>
-            <div className="flex flex-col gap-2">
-              {entries.map((entry) => (
-                <label key={entry.id} className="flex cursor-pointer items-start gap-3 text-sm leading-5">
-                  <input type="checkbox" checked={selected.has(entry.id)} onChange={(event) => setSelected((current) => { const next = new Set(current); if (event.target.checked) next.add(entry.id); else next.delete(entry.id); return next })} className="mt-1 accent-foreground" />
-                  <span><span className="block text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{t(entry.label)}</span>{entry.text}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        ) : null}
-        {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => { setOpen(false); reset() }}>{locale === "ru" ? "Отклонить" : "Reject"}</Button>
-          {preview ? <Button type="button" onClick={() => void acceptPreview()} disabled={accepting}>{accepting ? t("Saving…") : locale === "ru" ? "Принять выбранное" : "Accept selected"}</Button> : <Button type="button" onClick={() => void structureThought()} disabled={loading || thought.trim().length < 3}>{loading ? locale === "ru" ? "Структурирование…" : "Structuring…" : locale === "ru" ? "Структурировать мысль" : "Structure thought"} <WandSparkles data-icon="inline-end" /></Button>}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }
 
@@ -263,12 +165,66 @@ export function ContextEditor({ product, initialItems }: ContextEditorProps) {
   const [dirtyIds, setDirtyIds] = useState<Set<string>>(new Set())
   const [status, setStatus] = useState<"saved" | "dirty" | "saving" | "error">("saved")
   const [error, setError] = useState<string | null>(null)
+  const [, setWandLoadingId] = useState<string | null>(null)
+  const [analyzing, setAnalyzing] = useState(false)
 
   function updateText(id: string, text: string) {
     setItems((current) => current.map((item) => item.id === id ? { ...item, text } : item))
     setDirtyIds((current) => new Set(current).add(id))
     setStatus("dirty")
     setError(null)
+  }
+
+  async function rewriteText(id: string, kind: ContextItemKind, text: string) {
+    if (!text.trim()) return null
+    setWandLoadingId(id)
+    setError(null)
+    try {
+      const result = await requestJson<{ text: string }>(`/api/products/${product.id}/context/rewrite`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ kind, text }),
+      })
+      setStatus("dirty")
+      return result.text
+    } catch (requestError) {
+      setStatus("error")
+      setError(requestError instanceof Error ? requestError.message : "Could not rewrite context")
+      return null
+    } finally {
+      setWandLoadingId(null)
+    }
+  }
+
+  async function autofillFromUrl() {
+    if (!productUrl.trim()) return
+    setAnalyzing(true)
+    setError(null)
+    try {
+      const result = await requestJson<{ preview: ProductPreview }>("/api/products/analyze", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url: productUrl }),
+      })
+      const generated = entriesFromPreview(result.preview)
+      const additions = generated.filter((entry) => !items.some((item) => item.kind === entry.kind && item.text.trim())).map((entry, index) => ({
+        id: `local-ai-${entry.id}-${Date.now()}-${index}`,
+        product_id: product.id,
+        kind: entry.kind,
+        text: entry.text,
+        visibility: "public" as const,
+        source: "ai" as const,
+        sort_order: items.length + index,
+      }))
+      setItems((current) => [...current, ...additions])
+      setDirtyIds((current) => new Set([...current, ...additions.map((item) => item.id)]))
+      setStatus(additions.length ? "dirty" : "saved")
+    } catch (requestError) {
+      setStatus("error")
+      setError(requestError instanceof Error ? requestError.message : "Could not analyze product URL")
+    } finally {
+      setAnalyzing(false)
+    }
   }
 
   async function addItem(kind: ContextItemKind, visibility: "public" | "private", text: string) {
@@ -347,23 +303,18 @@ export function ContextEditor({ product, initialItems }: ContextEditorProps) {
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px]">
       <form className="flex flex-col gap-8" onSubmit={saveContext}>
         <FieldGroup>
-          <Field><FieldLabel htmlFor="product-url">{t("Public product URL")}</FieldLabel><Input id="product-url" type="url" value={productUrl} onChange={(event) => { setProductUrl(event.target.value); setStatus("dirty") }} /><FieldDescription>{locale === "ru" ? "Используем его, чтобы понять публичные возможности продукта перед сопоставлением со спросом." : "We use this to understand the public surface area before matching demand."}</FieldDescription></Field>
+          <Field><FieldLabel htmlFor="product-url">{t("Public product URL")}</FieldLabel><div className="flex items-center gap-2"><Input id="product-url" type="url" value={productUrl} onChange={(event) => { setProductUrl(event.target.value); setStatus("dirty") }} /><Button type="button" size="sm" onClick={() => void autofillFromUrl()} disabled={analyzing || !productUrl.trim()}><WandSparkles data-icon="inline-start" />{analyzing ? (locale === "ru" ? "Анализируем…" : "Analyzing…") : (locale === "ru" ? "Заполнить" : "Autofill")}</Button></div><FieldDescription>{locale === "ru" ? "Используем его, чтобы понять публичные возможности продукта перед сопоставлением со спросом." : "We use this to understand the public surface area before matching demand."}</FieldDescription></Field>
         </FieldGroup>
-        <EditableList label="Positioning" description="The clearest sentence describing why this product exists." items={items} kinds={["positioning"]} defaultKind="positioning" visibility="public" multiline onChange={updateText} onAdd={addItem} onDelete={deleteItem} />
-        <EditableList label="Ideal customer profile" description="Who gets the most value from this product." items={items} kinds={["icp"]} defaultKind="icp" visibility="public" multiline onChange={updateText} onAdd={addItem} onDelete={deleteItem} />
-        <EditableList label="Problems solved" description="What your product helps someone do or avoid." items={items} kinds={["problem"]} defaultKind="problem" visibility="public" onChange={updateText} onAdd={addItem} onDelete={deleteItem} />
-        <EditableList label="Public capabilities" description="Only functionality users can access today." items={items} kinds={["capability", "feature"]} defaultKind="capability" visibility="public" onChange={updateText} onAdd={addItem} onDelete={deleteItem} />
-        <EditableList label="Differentiators" description="Public reasons to choose this product." items={items} kinds={["differentiator"]} defaultKind="differentiator" visibility="public" onChange={updateText} onAdd={addItem} onDelete={deleteItem} />
-        <EditableList label="Private roadmap" description="Kept private and used only for internal classification." items={items} kinds={["roadmap"]} defaultKind="roadmap" visibility="private" multiline onChange={updateText} onAdd={addItem} onDelete={deleteItem} />
-        <EditableList label="Relevant keywords" description="Terms and concepts that help source adapters find useful evidence." items={items} kinds={["keyword"]} defaultKind="keyword" visibility="public" onChange={updateText} onAdd={addItem} onDelete={deleteItem} />
+        <EditableList label="Positioning" description="The clearest sentence describing why this product exists." items={items} kinds={["positioning"]} defaultKind="positioning" visibility="public" multiline onChange={updateText} onMagicWand={rewriteText} onAdd={addItem} onDelete={deleteItem} />
+        <EditableList label="Ideal customer profile" description="Who gets the most value from this product." items={items} kinds={["icp"]} defaultKind="icp" visibility="public" multiline onChange={updateText} onMagicWand={rewriteText} onAdd={addItem} onDelete={deleteItem} />
+        <EditableList label="Problems solved" description="What your product helps someone do or avoid." items={items} kinds={["problem"]} defaultKind="problem" visibility="public" onChange={updateText} onMagicWand={rewriteText} onAdd={addItem} onDelete={deleteItem} />
+        <EditableList label="Public capabilities" description="Only functionality users can access today." items={items} kinds={["capability", "feature"]} defaultKind="capability" visibility="public" onChange={updateText} onMagicWand={rewriteText} onAdd={addItem} onDelete={deleteItem} />
+        <EditableList label="Differentiators" description="Public reasons to choose this product." items={items} kinds={["differentiator"]} defaultKind="differentiator" visibility="public" onChange={updateText} onMagicWand={rewriteText} onAdd={addItem} onDelete={deleteItem} />
+        <EditableList label="Private roadmap" description="Kept private and used only for internal classification." items={items} kinds={["roadmap"]} defaultKind="roadmap" visibility="private" multiline onChange={updateText} onMagicWand={rewriteText} onAdd={addItem} onDelete={deleteItem} />
+        <EditableList label="Relevant keywords" description="Terms and concepts that help source adapters find useful evidence." items={items} kinds={["keyword"]} defaultKind="keyword" visibility="public" onChange={updateText} onMagicWand={rewriteText} onAdd={addItem} onDelete={deleteItem} />
         {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
         <div className="flex items-center justify-between gap-4 border-t pt-5"><span className="flex items-center gap-2 text-xs text-muted-foreground">{status === "saved" ? <><span className="size-1.5 rounded-full bg-foreground" aria-hidden /> {t("All changes saved")}</> : status === "saving" ? <><span className="size-1.5 rounded-full bg-muted-foreground" aria-hidden /> {locale === "ru" ? "Сохранение изменений…" : "Saving changes…"}</> : <><span className="size-1.5 rounded-full bg-muted-foreground" aria-hidden /> {t("Unsaved changes")}</>}</span><Button type="submit" disabled={status === "saving"}>{t(status === "saving" ? "Saving…" : "Save context")}</Button></div>
       </form>
-      <aside className="flex flex-col gap-5 lg:border-l lg:pl-7">
-        <div><p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">{t("AI-assisted editing")}</p><h2 className="mt-2 text-base font-medium">{locale === "ru" ? "Держите модель близко к источнику." : "Keep the model close to the source."}</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">{locale === "ru" ? "Сгенерированный контекст и ваши заметки хранятся вместе. Каждый пункт можно изменить или удалить до сопоставления." : "Generated context and your own notes live together. You can edit or remove every item before it affects matching."}</p></div>
-        <MagicWandDialog productId={product.id} onItemsCreated={(createdItems) => { setItems((current) => [...current, ...createdItems]); setStatus("saved") }} />
-        <div className="flex gap-2 border-t pt-5 text-xs leading-5 text-muted-foreground"><Lightbulb aria-hidden className="mt-0.5 shrink-0" /> {locale === "ru" ? "Совет: описывайте приватный план словами, которыми действительно пользуется команда. Чем конкретнее контекст, тем точнее сопоставление." : "Tip: write the private roadmap in language your team actually uses. Matching gets clearer when the context is specific."}</div>
-      </aside>
     </div>
   )
 }
