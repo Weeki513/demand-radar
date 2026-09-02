@@ -20,7 +20,9 @@ export const productEvidenceSchema = z.object({
     id: z.string().min(1).max(80),
     type: evidenceTypeSchema,
     claim: z.string().min(1).max(500),
-    sourceUrl: z.string().url().max(2_048),
+    // OpenAI structured outputs do not support the JSON Schema uri format.
+    // The request URL is validated at the HTTP/Solari boundary instead.
+    sourceUrl: z.string().min(1).max(2_048),
     sourceText: z.string().min(1).max(1_000),
     confidence: z.number().min(0).max(1),
   })).max(80),
